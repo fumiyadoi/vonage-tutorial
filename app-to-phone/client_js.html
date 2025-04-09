@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="./node_modules/@vonage/client-sdk/dist/vonageClientSDK.min.js"></script>
+    <style>
+      input,
+      button {
+        font-size: 1rem;
+      }
+      #call,
+      #hangup {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Call Phone from App</h1>
+    <label for="phone-number">Your Phone Number:</label>
+    <input
+      type="text"
+      name="phone-number"
+      value=""
+      placeholder="i.e. 14155550100"
+      id="phone-number"
+      size="30"
+    />
+    <button type="button" id="call">Call</button>
+    <button type="button" id="hangup">Hang Up</button>
+    <div id="status"></div>
+
+    <script>
+      const callButton = document.getElementById("call");
+      const hangUpButton = document.getElementById("hangup");
+      const statusElement = document.getElementById("status");
+      const token =
+        "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2wiOnsicGF0aHMiOnsiLyovcnRjLyoqIjp7fSwiLyovdXNlcnMvKioiOnt9LCIvKi9jb252ZXJzYXRpb25zLyoqIjp7fSwiLyovc2Vzc2lvbnMvKioiOnt9LCIvKi9kZXZpY2VzLyoqIjp7fSwiLyovcHVzaC8qKiI6e30sIi8qL2tub2NraW5nLyoqIjp7fSwiLyovbGVncy8qKiI6e319fSwiZXhwIjoxNzQ0MTk3NjMwLCJzdWIiOiJBbGljZSIsImp0aSI6ImRjMDNkNWRiLTRkNzYtNDgyMC1iMTk0LTg0MzYyZjM0YzBjZSIsImlhdCI6MTc0NDE5NjczMCwiYXBwbGljYXRpb25faWQiOiI2OGJjNmNhMi0zYTM3LTRmMzktYWU2YS05NjUwMzYyMDc2MzAifQ.e69L-23JwXFPMyDq2x8pAJW2qQTororLOUScJ8Y-x4I8ktEvKsKRa2Q2TFpxlnWTV2v7svO5bL8IkgUaF-7wbFEzsx1NL2bQ_K6k8dtYVFXm2406hUJwstXxXyjGblzx9jWi0b-pp9gZDJlrbXhyhS5ga2pXsE9CgLIo731JUNAfVb7swA6fKHugTrNtVNZN8kz-vev5SVDgePtHDJMdA5UM7b9SQIeGJblYxklFN4pzbDgbdGWLdT5hp-_NTI_QHef_ZG5knra9p9bFKoZ33r97hy24czSLVWoxeJta6D5XXznlECddu0RaefgXQzDY0dAQjww6yG_RuwelDh5Bzw";
+      const client = new vonageClientSDK.VonageClient();
+      let callId = null;
+
+      client
+        .createSession(token)
+        .then((sessionId) => {
+          console.log("Id of created session: ", sessionId);
+          callButton.style.display = "inline";
+        })
+        .catch((error) => {
+          console.error("Error creating session: ", error);
+        });
+
+      client.on("legStatusUpdate", (callId, legId, status) => {
+        if (status === "ANSWERED") {
+          callButton.style.display = "none";
+          hangUpButton.style.display = "inline";
+        }
+        if (status === "COMPLETED") {
+          callId = null;
+          callButton.style.display = "inline";
+          hangUpButton.style.display = "none";
+        }
+      });
+
+      callButton.addEventListener("click", (event) => {
+        const destination = document.getElementById("phone-number").value;
+        if (destination !== "") {
+          client
+            .serverCall({ to: destination })
+            .then((_callId) => {
+              callId = _callId;
+            })
+            .catch((error) => {
+              console.error(`Error making call: ${error}`);
+            });
+        } else {
+          statusElement.innerText = "Please enter your phone number.";
+        }
+      });
+
+      hangUpButton.addEventListener("click", () => {
+        client
+          .hangup(callId)
+          .then(() => {
+            hangUpButton.style.display = "none";
+            callButton.style.display = "inline";
+          })
+          .catch((error) => {
+            console.error("Error hanging up call: ", error);
+          });
+      });
+    </script>
+  </body>
+</html>
